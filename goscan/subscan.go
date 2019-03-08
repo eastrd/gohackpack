@@ -33,13 +33,13 @@ func crtsh(domain string, c chan []string) {
 		subdomainsList = append(subdomainsList, subdomain)
 	}
 	c <- subdomainsList
-	fmt.Println("Done crtsh")
 }
 
 func virustotal(domain string, c chan []string) {
 	wg.Add(1)
 	defer wg.Done()
 
+	// Define a multi-layer struct to extract subdomain info from JSON
 	type Info struct {
 		Subdomain []struct {
 			ID string `json:"id"`
@@ -58,12 +58,16 @@ func virustotal(domain string, c chan []string) {
 		subdomains = append(subdomains, subdomain.ID)
 	}
 	c <- subdomains
-	fmt.Println("Finish VT")
 }
 
 func main() {
 	c := make(chan []string)
 	subdomainsMap := make(map[string]int, 0)
+
+	if len(os.Args) != 2 {
+		fmt.Println("Usage: subscan.go [domain]")
+		return
+	}
 	domain := os.Args[1]
 
 	go virustotal(domain, c)
@@ -71,6 +75,11 @@ func main() {
 
 	wg.Wait()
 
+	// As channel has more than one subdomain arrays, iterate over all of them and extract each
+
+	for _, subdomain := range <-c {
+		subdomainsMap[subdomain] = 1
+	}
 	for _, subdomain := range <-c {
 		subdomainsMap[subdomain] = 1
 	}
